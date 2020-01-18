@@ -20,12 +20,12 @@ from thewarden.users.decorators import MWT, timing
 
 # Generic Requests will try each of these before failing
 REALTIME_PROVIDER_PRIORITY = [
-    'cc_realtime', 'aa_realtime_digital', 'aa_realtime_stock',
+    'cc_realtime', 'aa_realtime_digital', 'iex_realtime', 'aa_realtime_stock',
     'fp_realtime_stock'
 ]
 FX_RT_PROVIDER_PRIORITY = ['aa_realtime_digital', 'cc_realtime']
 HISTORICAL_PROVIDER_PRIORITY = [
-    'cc_digital', 'aa_digital', 'aa_stock', 'cc_fx', 'aa_fx', 'fmp_stock',
+    'cc_digital', 'aa_digital', 'aa_stock', 'iex', 'cc_fx', 'aa_fx', 'fmp_stock',
     'bitmex'
 ]
 FX_PROVIDER_PRIORITY = ['aa_fx', 'cc_fx']
@@ -54,11 +54,6 @@ FX_PROVIDER_PRIORITY = ['aa_fx', 'cc_fx']
 #     edit the realtime function to parse the date correctly and
 #     return a price float
 
-# _____________________________________________
-# Classes go here
-# _____________________________________________
-
-
 @MWT(timeout=60)
 def current_path():
     # determine if application is a script file or frozen exe
@@ -74,6 +69,10 @@ def current_path():
     # Make sure we go 2 levels up for the base application folder
     return(application_path)
 
+# _____________________________________________
+# Classes go here
+# _____________________________________________
+
 
 class PriceProvider:
     # This class manages a list of all pricing providers
@@ -82,7 +81,8 @@ class PriceProvider:
                  base_url,
                  ticker_field,
                  field_dict=None,
-                 doc_link=None):
+                 doc_link=None,
+                 replace_ticker=None):
         # field dict includes all fields to be passed to the URL
         # for example, for Alphavantage
         # name = 'Alphavantage_digital'
@@ -101,6 +101,7 @@ class PriceProvider:
         if self.field_dict is not None:
             self.url_args = "&" + urllib.parse.urlencode(field_dict)
         self.errors = []
+        self.replace_ticker = replace_ticker
 
     @MWT(timeout=5)
     def request_data(self, ticker):
@@ -115,6 +116,9 @@ class PriceProvider:
                 if self.url_args[0] == '&':
                     self.url_args = self.url_args.replace('&', '?', 1)
                 globalURL = (self.base_url + "/" + ticker + self.url_args)
+            # Some URLs are in the form http://www.www.www/ticker_field/extra_fields?
+            if self.replace_ticker is not None:
+                globalURL = self.base_url.replace('ticker_field', ticker)
             request = tor_request(globalURL)
             try:
                 data = request.json()
@@ -291,6 +295,20 @@ class PriceData():
                 df_save = None
             return (df_save)
 
+
+        # Provider: iex
+        if provider.name == 'iex':
+            try:
+                df = pd.DataFrame.from_dict(data,
+                                            orient="index")
+                df_save = df[['close', 'open', 'high', 'low', 'volume']]
+                df.index.names = ['date']
+                print (df_save)
+            except Exception as e:
+                self.errors.append(e)
+                df_save = None
+            return (df_save)
+
         # Provider: fmpstocks
         if provider.name == 'financialmodelingprep':
             try:
@@ -398,6 +416,13 @@ class PriceData():
                 price = (price_request['price'])
             except Exception as e:
                 self.errors.append(e)
+
+        if rt_provider.name == 'iexrealtime':
+            try:
+                price = price_request
+            except Exception as e:
+                self.errors.append(e)
+
 
         return price
 
@@ -528,7 +553,7 @@ def price_data_rt(ticker, priority_list=REALTIME_PROVIDER_PRIORITY):
 def GBTC_premium(price):
     # Calculates the current GBTC premium in percentage points
     # to BTC (see https://grayscale.co/bitcoin-trust/)
-    SHARES = 0.00097630
+    SHARES = 0.00096857  # as of 1/15/2020
     fairvalue = price_data_rt("BTC") * SHARES
     premium = (price / fairvalue) - 1
     return fairvalue, premium
@@ -851,6 +876,24 @@ PROVIDER_LIST = {
         ticker_field='',
         field_dict='',
         doc_link='https://financialmodelingprep.com/developer/docs/#Stock-Price'
+    ),
+    'iex':
+    PriceProvider(
+        name='iex',
+        base_url='https://cloud.iexapis.com/stable/stock/ticker_field/chart/max?token=pk_5d18c42c910544d68a844d79ad8714fa',
+        replace_ticker='ticker_field',
+        ticker_field='',
+        field_dict='',
+        doc_link=''
+    ),
+    'iex_realtime':
+    PriceProvider(
+        name='iexrealtime',
+        base_url='https://cloud.iexapis.com/stable/stock/ticker_field/price?token=pk_5d18c42c910544d68a844d79ad8714fa',
+        replace_ticker='ticker_field',
+        ticker_field='',
+        field_dict='',
+        doc_link='https://iexcloud.io/docs/api/#price'
     ),
 }
 
