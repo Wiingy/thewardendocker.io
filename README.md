@@ -1,4 +1,7 @@
 # The WARden
+## IMPORTANT NOTE
+### Unfortunately I'm short on time to maintain this project right now. Keep in mind that this is alpha software. Expect bugs and keep reporting them to github.
+### If you are a developer who would like to help maintain this project, let me know.
 
 _Version 0.15 Alpha_
 
