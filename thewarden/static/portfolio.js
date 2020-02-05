@@ -687,12 +687,13 @@ function createcharts(piechart) {
             dataLabels: {
                 enabled: true,
                 align: 'center',
-                allowOverlap: false,
+                allowOverlap: true,
                 format: '{point.name} {point.y:.0f}%',
+                floating: true,
                 connectorPadding: 1,
-                distance: 10,
+                distance: -8,
                 softConnector: true,
-                crookDistance: '10%'
+                crookDistance: '5%'
             },
         }]
     });

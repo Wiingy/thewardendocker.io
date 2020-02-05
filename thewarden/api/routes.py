@@ -2014,4 +2014,3 @@ def frontpage_btc():
         if request.method == "GET":
             return (json.dumps(error_message))
 
-

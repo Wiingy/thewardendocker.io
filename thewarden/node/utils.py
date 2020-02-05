@@ -188,7 +188,7 @@ def dojo_multiaddr(addr, type, at):
     #   at      authentication token
     logging.info("Starting MultiAddr")
     onion_address = dojo_get_settings()["onion"]
-    if type.lower() == "bip44":
+    if type.lower() == "bip44" or type.lower() == "bip49":
         type = "bip84"
     if onion_address is None:
         flash(

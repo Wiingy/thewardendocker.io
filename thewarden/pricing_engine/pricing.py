@@ -381,6 +381,7 @@ class PriceData():
         # If no name is found, return None
         return None
 
+    @MWT(timeout=10)
     def realtime(self, rt_provider):
         # This is the parser for realtime prices.
         # Data should be parsed so only the price is returned
