@@ -63,4 +63,4 @@ if WARDEN_STATUS == "developer":
     flask_debug = True
 
 if __name__ == "__main__":
-    app.run(debug=flask_debug, threaded=True)
+    app.run(host='0.0.0.0', port=33777, threaded=True, debug=False)
